@@ -1,0 +1,61 @@
+// SQLite (WAL mode) — offline, file-based, portable.
+// Semua perubahan schema lewat: npx prisma migrate dev --name <deskripsi>
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String // bcrypt hash
+  name      String?
+  createdAt DateTime @default(now())
+}
+
+model StudioProfile {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  contact   String?
+  bankInfo  String?
+  logoUrl   String?
+  updatedAt DateTime @updatedAt
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  number         String        @unique
+  date           DateTime
+  dueDate        DateTime?
+  clientName     String
+  clientContact  String?
+  currency       String // "IDR" | "USD" | "EUR" | "CUSTOM"
+  currencySymbol String?
+  discountType   String // "percent" | "nominal"
+  discountValue  Float         @default(0)
+  status         String // "paid" | "unpaid"
+  notes          String?
+  items          InvoiceItem[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model InvoiceItem {
+  id        String  @id @default(cuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  desc      String
+  qty       Float
+  price     Float
+}
+
+model InvoiceSequence {
+  id    String @id @default("singleton")
+  year  Int
+  count Int
+}
