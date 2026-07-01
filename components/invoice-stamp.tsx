@@ -1,5 +1,8 @@
+import { INVOICE_T, type Lang } from "@/lib/invoice-i18n";
+
 type Props = {
   status: string;
+  language?: Lang;
   /** Skala ukuran stempel (1 = default). */
   scale?: number;
 };
@@ -7,12 +10,14 @@ type Props = {
 /**
  * Stempel visual status pembayaran — elemen pembeda khas Studio Invoice.
  * Border ganda, miring, sedikit transparan agar terasa modern-simpel.
- * Sengaja memakai warna hex inline supaya konsisten saat di-export (JPG/PDF).
+ * Memakai warna hex inline (dari palet) supaya konsisten saat di-export.
  */
-export function InvoiceStamp({ status, scale = 1 }: Props) {
+export function InvoiceStamp({ status, language = "id", scale = 1 }: Props) {
+  const t = INVOICE_T[language];
   const paid = status === "paid";
-  const color = paid ? "#15803d" : "#b91c1c";
-  const label = paid ? "LUNAS" : "BELUM LUNAS";
+  // Palet: paid = Dark Slate Grey, unpaid = Brown Red.
+  const color = paid ? "#335c67" : "#9e2a2b";
+  const label = paid ? t.paid : t.unpaid;
 
   return (
     <div
@@ -20,7 +25,7 @@ export function InvoiceStamp({ status, scale = 1 }: Props) {
       style={{
         display: "inline-flex",
         transform: `rotate(-12deg) scale(${scale})`,
-        opacity: 0.82,
+        opacity: 0.85,
         userSelect: "none",
         pointerEvents: "none",
       }}
@@ -36,14 +41,14 @@ export function InvoiceStamp({ status, scale = 1 }: Props) {
           style={{
             border: `1.5px solid ${color}`,
             borderRadius: 6,
-            padding: paid ? "8px 22px" : "8px 16px",
+            padding: "8px 16px",
             color,
             fontWeight: 800,
-            fontSize: paid ? 30 : 24,
+            fontSize: 26,
             lineHeight: 1,
             letterSpacing: 2,
             textTransform: "uppercase",
-            fontFamily: "Arial, Helvetica, sans-serif",
+            fontFamily: "var(--font-sans), Arial, Helvetica, sans-serif",
             whiteSpace: "nowrap",
           }}
         >

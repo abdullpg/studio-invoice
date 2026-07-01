@@ -20,10 +20,15 @@ export default async function SettingsPage() {
       <SettingsForm
         defaultValues={{
           name: profile.name,
+          tagline: profile.tagline ?? "",
           address: profile.address ?? "",
           contact: profile.contact ?? "",
           bankInfo: profile.bankInfo ?? "",
           logoUrl: profile.logoUrl ?? "",
+          qrisUrl: profile.qrisUrl ?? "",
+          watermarkText: profile.watermarkText ?? "",
+          invoicePrefix: profile.invoicePrefix ?? "INV",
+          language: (profile.language as "id" | "en") ?? "id",
         }}
       />
     </div>

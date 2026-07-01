@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getInvoice, getProfileOrCreate } from "@/lib/data";
+import { computeTotals } from "@/lib/totals";
+import { invoiceVerifyCode } from "@/lib/verify";
 import { InvoiceDetail } from "@/components/invoice-detail";
 
 export const metadata: Metadata = {
@@ -19,10 +21,19 @@ export default async function InvoiceDetailPage({
   ]);
   if (!invoice) notFound();
 
+  const { total } = computeTotals(invoice.items, invoice.discountType, invoice.discountValue);
+  const verifyCode = invoiceVerifyCode({
+    number: invoice.number,
+    date: invoice.date,
+    clientName: invoice.clientName,
+    total,
+  });
+
   return (
     <InvoiceDetail
       id={invoice.id}
       number={invoice.number}
+      verifyCode={verifyCode}
       profile={profile}
       invoice={{
         number: invoice.number,

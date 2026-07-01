@@ -1,131 +1,215 @@
-# Studio Invoice
+# 🧾 Studio Invoice
 
-Sistem invoice untuk producer musik — **offline & lokal**, dibangun dengan Next.js + SQLite (WAL).
-Tetap mempertahankan elemen khasnya: **status pembayaran sebagai stempel visual** (LUNAS / BELUM LUNAS) di invoice.
+Aplikasi pembuat invoice (nota tagihan) untuk **producer musik**. Berjalan **offline di komputermu sendiri** — tidak perlu internet, tidak perlu bayar server. Semua data tersimpan di satu file di laptop/PC-mu.
 
-## Tech Stack
+Ciri khasnya: status pembayaran tampil sebagai **stempel** **LUNAS** (hijau) / **BELUM LUNAS** (merah) di atas invoice, persis seperti distempel manual.
 
-- **Next.js 16** (App Router) + TypeScript
-- **Tailwind CSS v4** + **shadcn/ui**
-- **Prisma 6** ORM → **SQLite (mode WAL)**, file-based, portable
-- **Auth.js v5 (NextAuth)** — Credentials, 1 akun producer
-- **react-hook-form + zod** untuk form & validasi
-- **html2canvas-pro + jsPDF** untuk export JPG/PDF
+> Panduan ini ditulis untuk pemula. Ikuti langkah demi langkah, tidak perlu paham coding.
 
-> Versi ini sengaja memakai SQLite (bukan Postgres) supaya bisa jalan **sepenuhnya offline** di satu komputer. Seluruh data ada di satu file `prisma/dev.db` yang gampang di-backup & dipindah.
+---
 
-## Prasyarat
+## ✨ Fitur
 
-- Node.js 18+ (diuji di Node 24)
+- **Buat, lihat, edit, hapus invoice** dengan mudah
+- **Banyak item** per invoice (deskripsi, jumlah, harga satuan)
+- **Diskon** otomatis — bisa persen (%) atau angka tetap (nominal)
+- **Banyak mata uang**: Rupiah, USD, Euro, atau simbol custom — beda-beda per invoice
+- **Stempel LUNAS / BELUM LUNAS** di invoice
+- **Nomor invoice otomatis** berformat `INV-2026-0001` (urut sendiri, reset tiap ganti tahun)
+- **Riwayat invoice**: cari berdasarkan nomor/nama klien, filter status, pagination
+- **Export ke JPG & PDF** untuk dikirim ke klien
+- **Profil studio**: nama, alamat, kontak, rekening, dan **logo** — tampil di setiap invoice
+- **Login** sederhana supaya invoice-mu tidak bisa dibuka orang lain
+- **Mode terang & gelap** (dark mode)
+- **Tampilan responsif**: nyaman dipakai di **HP maupun komputer**
 
-## Setup Awal
+---
+
+## 🧰 Langkah 1 — Pasang Node.js (sekali saja)
+
+Aplikasi ini butuh **Node.js versi 18 atau lebih baru**. Cek dulu apakah sudah ada — buka terminal lalu ketik:
 
 ```bash
-# 1. Install dependency
+node --version
+```
+
+Kalau muncul angka seperti `v18.x` atau lebih tinggi, lewati langkah ini. Kalau muncul error "command not found", pasang dulu:
+
+### 🪟 Windows
+1. Buka <https://nodejs.org> → unduh versi **LTS**.
+2. Jalankan installer, klik **Next** sampai selesai.
+3. Tutup lalu buka lagi terminal (PowerShell).
+
+### 🍎 macOS
+- Cara termudah: unduh installer **LTS** dari <https://nodejs.org>, lalu jalankan.
+- Atau lewat [Homebrew](https://brew.sh): `brew install node`
+
+### 🐧 Linux (Ubuntu/Debian)
+```bash
+sudo apt update && sudo apt install -y nodejs npm
+```
+> Kalau versinya terlalu lama, pakai [nvm](https://github.com/nvm-sh/nvm): `nvm install 20`
+
+---
+
+## 🚀 Langkah 2 — Siapkan aplikasi (sekali saja)
+
+Buka terminal **di dalam folder project ini**, lalu jalankan perintah berikut **berurutan**.
+
+### 1) Pasang semua komponen aplikasi
+```bash
 npm install
+```
 
-# 2. Siapkan environment
-#    Salin .env.example -> .env lalu isi nilainya
+### 2) Buat file pengaturan `.env`
+
+**Windows (PowerShell):**
+```powershell
+Copy-Item .env.example .env
+```
+**macOS / Linux:**
+```bash
 cp .env.example .env
-#    Generate AUTH_SECRET:
-node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
-#    Tempel hasilnya ke AUTH_SECRET di .env
+```
 
-# 3. Buat database + tabel, lalu seed akun & profil default
+### 3) Buat kunci keamanan login
+
+Jalankan perintah ini, lalu **salin hasilnya**:
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
+Buka file `.env`, tempel hasil tadi ke dalam tanda kutip `AUTH_SECRET`, contoh:
+```
+AUTH_SECRET="hAsiL-AcAk-yAng-tAdi-disALin="
+```
+
+### 4) Siapkan database & akun login
+```bash
 npm run db:deploy
 npm run db:seed
 ```
 
-### Akun login default (dari `.env`)
+Selesai! Setup hanya perlu dilakukan sekali.
 
-| Field    | Nilai                   |
+---
+
+## ▶️ Langkah 3 — Menjalankan aplikasi
+
+Setiap kali ingin memakai aplikasi:
+
+```bash
+npm run dev
+```
+
+Lalu buka browser ke 👉 **<http://localhost:3000>**
+
+Untuk menghentikan, tekan **Ctrl + C** di terminal.
+
+### 🔑 Login pertama kali
+
+| | |
 | -------- | ----------------------- |
 | Email    | `producer@studio.local` |
 | Password | `changeme123`           |
 
-Ubah `SEED_EMAIL` / `SEED_PASSWORD` di `.env` lalu jalankan `npm run db:seed` lagi untuk memperbarui kredensial.
+> **Ganti password!** Buka file `.env`, ubah `SEED_EMAIL` dan `SEED_PASSWORD` sesukamu, lalu jalankan `npm run db:seed` sekali lagi.
 
-## Menjalankan
+---
 
+## 📖 Cara pakai singkat
+
+1. **Atur profil studio dulu** → menu **Pengaturan**. Isi nama studio, kontak, rekening, dan upload logo. Ini akan muncul di semua invoice.
+2. **Buat invoice** → menu **Buat Baru**. Isi nama klien, tambah item (deskripsi + jumlah + harga), atur diskon & mata uang bila perlu, pilih status Lunas/Belum, lalu **Simpan**.
+3. **Lihat & kelola** → menu **Invoice**. Klik salah satu untuk melihat detail.
+4. **Kirim ke klien** → di halaman detail, klik **JPG** atau **PDF** untuk mengunduh.
+5. **Ubah status** kapan saja dengan tombol **Tandai Lunas / Tandai Belum Lunas**.
+
+---
+
+## 💾 Backup data (penting!)
+
+Semua data ada di **satu file**: `prisma/dev.db`. Untuk backup, cukup **salin file itu** ke tempat aman (flashdisk, cloud, dll). Hentikan aplikasi dulu (Ctrl + C) agar aman.
+
+**Windows (PowerShell):**
+```powershell
+Copy-Item prisma\dev.db "backup-$(Get-Date -Format yyyyMMdd).db"
+```
+**macOS / Linux:**
 ```bash
-# Mode development (hot reload)
-npm run dev
-# buka http://localhost:3000
+cp prisma/dev.db "backup-$(date +%Y%m%d).db"
+```
 
-# Mode produksi lokal
+**Restore / pindah ke komputer lain:** salin folder project + file `prisma/dev.db`, jalankan `npm install`, lalu `npm run dev`.
+
+---
+
+## 🆘 Masalah umum
+
+| Masalah | Solusi |
+| --- | --- |
+| `node: command not found` | Node.js belum terpasang — ulangi Langkah 1. |
+| Port 3000 sudah dipakai | Jalankan di port lain: `npm run dev -- -p 3001` lalu buka `localhost:3001`. |
+| Lupa password | Ubah `SEED_PASSWORD` di `.env`, jalankan `npm run db:seed` lagi. |
+| Mau lihat/edit data mentah | `npm run db:studio` (membuka tampilan tabel di browser). |
+| Halaman error setelah update kode | Hentikan (Ctrl + C), jalankan `npm install` lalu `npm run dev` lagi. |
+
+---
+
+## 🏭 Mode produksi (opsional, lebih cepat)
+
+Kalau aplikasi sudah stabil dan ingin versi lebih ngebut:
+```bash
 npm run build
 npm start
 ```
 
-## Fitur
+---
 
-- CRUD invoice (buat, lihat, edit, hapus)
-- Multi-item per invoice (deskripsi, qty, harga) dengan baris dinamis
-- Diskon persen / nominal, terhitung otomatis
-- Multi mata uang per-invoice: IDR / USD / EUR / simbol custom
-- Status bayar (Lunas / Belum Lunas) → **stempel visual** di preview & export
-- Nomor invoice otomatis `INV-{tahun}-{4 digit}`, di-generate server-side & transaksional (reset tiap ganti tahun)
-- Riwayat invoice: pencarian (nomor/klien), filter status, pagination (>20 baris)
-- Export **JPG** & **PDF** dari halaman detail
-- Pengaturan profil studio + upload logo (`/public/uploads`)
-- Login terproteksi (proxy/middleware NextAuth) — semua route butuh login
-- Dark mode
+## 🗂️ Daftar perintah
 
-## Script
+| Perintah             | Fungsi                                   |
+| -------------------- | ---------------------------------------- |
+| `npm run dev`        | Menjalankan aplikasi (mode harian)       |
+| `npm run build`      | Membuat versi produksi                   |
+| `npm start`          | Menjalankan versi produksi               |
+| `npm run db:seed`    | Membuat/menyetel ulang akun login        |
+| `npm run db:studio`  | Membuka GUI untuk melihat data           |
+| `npm run db:deploy`  | Menyiapkan tabel database                |
 
-| Perintah             | Fungsi                                  |
-| -------------------- | --------------------------------------- |
-| `npm run dev`        | Dev server                              |
-| `npm run build`      | Build produksi                          |
-| `npm start`          | Jalankan hasil build                    |
-| `npm run db:migrate` | Buat migration baru saat schema berubah |
-| `npm run db:deploy`  | Terapkan semua migration ke database    |
-| `npm run db:seed`    | Seed akun producer + profil + sequence  |
-| `npm run db:studio`  | Prisma Studio (GUI lihat/edit data)     |
+---
 
-## Backup & Portabilitas
+## 🧱 Untuk yang penasaran (teknis)
 
-Karena SQLite, **seluruh database = satu file** `prisma/dev.db`.
+- **Next.js 16** (App Router) + **TypeScript**
+- **Tailwind CSS v4** + **shadcn/ui**
+- **Prisma 6** + **SQLite (mode WAL)** → database 1 file, gampang dipindah
+- **Auth.js v5 (NextAuth)** untuk login
+- **react-hook-form + zod** untuk form & validasi
+- **html2canvas-pro + jsPDF** untuk export JPG/PDF
 
-### Backup
-
-Salin file-nya (matikan dulu server agar konsisten):
-
-```powershell
-Copy-Item prisma\dev.db "backup-invoice-$(Get-Date -Format yyyyMMdd).db"
-```
-
-> Saat server jalan ada juga `dev.db-wal` & `dev.db-shm` (Write-Ahead Log).
-> Untuk backup paling aman, hentikan server dulu agar WAL ter-checkpoint ke `dev.db`.
-
-### Restore / pindah komputer
-
-Salin `prisma/dev.db` ke komputer baru (path yang sama), `npm install`, lalu `npm run dev`.
-
-### Migrasi ke database lain (mis. Postgres) nanti
-
-1. Ganti `provider` di `prisma/schema.prisma` ke `postgresql` dan `DATABASE_URL` di `.env`.
-2. Jalankan `npx prisma migrate deploy` di database baru.
-3. Pindahkan data. Karena semua akses lewat Prisma, kode aplikasi tidak perlu diubah.
-
-## Struktur Proyek
+<details>
+<summary>Struktur folder</summary>
 
 ```
 app/
-  (auth)/login/              # halaman login
-  (dashboard)/
-    invoices/                # riwayat, buat, detail, edit
-    settings/                # profil studio
-  api/                       # invoices, settings, upload, auth, next-number
-components/                  # form, preview, stempel, tabel, shell, ui/ (shadcn)
-lib/                         # prisma, auth, currency, totals, validations, export, dll
+  (auth)/login/        # halaman login
+  (dashboard)/         # invoices (list/buat/detail/edit) + settings
+  api/                 # endpoint: invoices, settings, upload, auth
+components/            # form, preview, stempel, tabel, shell, ui/ (shadcn)
+lib/                   # prisma, auth, currency, totals, validations, export
 prisma/
-  schema.prisma
-  migrations/                # history schema (commit ke git)
-  seed.ts
-proxy.ts                     # proteksi route (NextAuth, edge-safe)
+  schema.prisma        # struktur database
+  migrations/          # riwayat perubahan struktur
+  dev.db               # ← DATABASE-MU (backup file ini)
+proxy.ts               # proteksi login antar-halaman
 ```
+</details>
 
-## Catatan WAL
+<details>
+<summary>Pindah ke database lain (mis. PostgreSQL) nanti</summary>
 
-Mode WAL diaktifkan otomatis di `lib/prisma.ts` (`PRAGMA journal_mode=WAL`) untuk konkurensi baca/tulis yang lebih baik. Pengaturan ini tersimpan permanen di header database.
+Karena memakai Prisma, pindah database tidak mengubah kode aplikasi:
+1. Ubah `provider` di `prisma/schema.prisma` menjadi `postgresql`.
+2. Ganti `DATABASE_URL` di `.env` ke alamat database baru.
+3. Jalankan `npx prisma migrate deploy`.
+</details>

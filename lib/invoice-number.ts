@@ -1,7 +1,13 @@
 import { prisma } from "./prisma";
 
-function format(year: number, count: number): string {
-  return `INV-${year}-${String(count).padStart(4, "0")}`;
+async function getPrefix(): Promise<string> {
+  const profile = await prisma.studioProfile.findFirst();
+  const raw = (profile?.invoicePrefix || "INV").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return raw || "INV";
+}
+
+function format(prefix: string, year: number, count: number): string {
+  return `${prefix}-${year}-${String(count).padStart(4, "0")}`;
 }
 
 /**
@@ -10,6 +16,7 @@ function format(year: number, count: number): string {
  */
 export async function consumeInvoiceNumber(): Promise<string> {
   const year = new Date().getFullYear();
+  const prefix = await getPrefix();
   const count = await prisma.$transaction(async (tx) => {
     const seq = await tx.invoiceSequence.upsert({
       where: { id: "singleton" },
@@ -23,7 +30,7 @@ export async function consumeInvoiceNumber(): Promise<string> {
     });
     return nextCount;
   });
-  return format(year, count);
+  return format(prefix, year, count);
 }
 
 /**
@@ -31,9 +38,10 @@ export async function consumeInvoiceNumber(): Promise<string> {
  */
 export async function peekInvoiceNumber(): Promise<string> {
   const year = new Date().getFullYear();
+  const prefix = await getPrefix();
   const seq = await prisma.invoiceSequence.findUnique({
     where: { id: "singleton" },
   });
   const nextCount = !seq || seq.year !== year ? 1 : seq.count + 1;
-  return format(year, nextCount);
+  return format(prefix, year, nextCount);
 }

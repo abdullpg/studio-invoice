@@ -13,6 +13,8 @@ import {
   Loader2,
   CheckCircle2,
   Circle,
+  Maximize2,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,21 +31,34 @@ import {
   type PreviewInvoice,
   type PreviewProfile,
 } from "@/components/invoice-preview";
+import { FitToWidth } from "@/components/fit-to-width";
 import { exportToJPG, exportToPDF } from "@/lib/export";
 import { toDateInput } from "@/lib/dates";
 
 type Props = {
   id: string;
   number: string;
+  verifyCode: string;
   invoice: PreviewInvoice;
   profile: PreviewProfile;
 };
 
-export function InvoiceDetail({ id, number, invoice, profile }: Props) {
+export function InvoiceDetail({ id, number, verifyCode, invoice, profile }: Props) {
   const router = useRouter();
   const previewRef = React.useRef<HTMLDivElement>(null);
   const [busy, setBusy] = React.useState<null | "jpg" | "pdf" | "status" | "delete">(null);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [fullscreen, setFullscreen] = React.useState(false);
+
+  // Tutup layar penuh dengan tombol Esc.
+  React.useEffect(() => {
+    if (!fullscreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFullscreen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [fullscreen]);
 
   async function handleExport(kind: "jpg" | "pdf") {
     if (!previewRef.current) return;
@@ -131,6 +146,14 @@ export function InvoiceDetail({ id, number, invoice, profile }: Props) {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setFullscreen(true)}
+          >
+            <Maximize2 className="size-4" />
+            Layar Penuh
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => handleExport("jpg")}
             disabled={busy !== null}
           >
@@ -178,9 +201,74 @@ export function InvoiceDetail({ id, number, invoice, profile }: Props) {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border bg-muted/30 p-3 shadow-sm sm:p-6">
-        <InvoicePreview ref={previewRef} invoice={invoice} profile={profile} />
+      <div
+        onClick={() => setFullscreen(true)}
+        title="Klik untuk layar penuh"
+        className="cursor-zoom-in rounded-xl border bg-muted/30 p-3 shadow-sm sm:p-6"
+      >
+        <FitToWidth baseWidth={760} center>
+          <InvoicePreview ref={previewRef} invoice={invoice} profile={profile} verifyCode={verifyCode} />
+        </FitToWidth>
       </div>
+
+      {/* Overlay layar penuh */}
+      {fullscreen && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col bg-black/80 backdrop-blur-sm"
+          onClick={() => setFullscreen(false)}
+        >
+          <div className="flex items-center justify-between gap-2 p-3 text-white">
+            <span className="text-sm font-medium">{number}</span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleExport("jpg");
+                }}
+                disabled={busy !== null}
+              >
+                {busy === "jpg" ? <Loader2 className="size-4 animate-spin" /> : <FileImage className="size-4" />}
+                JPG
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleExport("pdf");
+                }}
+                disabled={busy !== null}
+              >
+                {busy === "pdf" ? <Loader2 className="size-4 animate-spin" /> : <FileText className="size-4" />}
+                PDF
+              </Button>
+              <Button
+                variant="secondary"
+                size="icon"
+                aria-label="Tutup"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFullscreen(false);
+                }}
+              >
+                <X className="size-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="min-h-0 flex-1 overflow-auto p-4 sm:p-8">
+            <div
+              className="mx-auto w-full max-w-3xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <FitToWidth baseWidth={760} center>
+                <InvoicePreview invoice={invoice} profile={profile} verifyCode={verifyCode} />
+              </FitToWidth>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

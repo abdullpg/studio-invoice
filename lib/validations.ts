@@ -25,10 +25,19 @@ export type InvoiceFormValues = z.output<typeof invoiceSchema>;
 
 export const settingsSchema = z.object({
   name: z.string().min(1, "Nama studio wajib diisi"),
+  tagline: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
   contact: z.string().optional().nullable(),
   bankInfo: z.string().optional().nullable(),
   logoUrl: z.string().optional().nullable(),
+  qrisUrl: z.string().optional().nullable(),
+  watermarkText: z.string().optional().nullable(),
+  invoicePrefix: z
+    .string()
+    .max(12, "Maksimal 12 karakter")
+    .optional()
+    .nullable(),
+  language: z.enum(["id", "en"]).optional().nullable(),
 });
 
 export type SettingsFormValues = z.infer<typeof settingsSchema>;

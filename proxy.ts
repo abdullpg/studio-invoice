@@ -9,6 +9,8 @@ export const proxy = auth;
 
 export const config = {
   // Jalan di semua route KECUALI: /api (dilindungi di handler-nya sendiri),
-  // aset _next, file statis (mengandung titik), dan folder /uploads.
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|uploads|.*\\..*).*)"],
+  // SELURUH /_next (termasuk webpack-hmr — kalau diproteksi, websocket HMR
+  // gagal & memunculkan "Unauthorized", terutama saat diakses lewat tunnel
+  // seperti cloudflared), favicon, /uploads, dan file statis (mengandung titik).
+  matcher: ["/((?!api|_next|verify|favicon.ico|uploads|.*\\..*).*)"],
 };

@@ -1,0 +1,58 @@
+export type Lang = "id" | "en";
+
+export const INVOICE_T = {
+  id: {
+    invoice: "INVOICE",
+    billTo: "Tagihan kepada",
+    date: "Tanggal",
+    due: "Jatuh tempo",
+    desc: "Deskripsi",
+    qty: "Qty",
+    price: "Harga",
+    amount: "Jumlah",
+    subtotal: "Subtotal",
+    discount: "Diskon",
+    total: "TOTAL",
+    notes: "Catatan",
+    payment: "Pembayaran",
+    scan: "Scan untuk bayar",
+    verify: "Kode Verifikasi",
+    sealed: "Keaslian tersegel",
+    defaultTagline: "Studio Produksi Musik",
+    paid: "LUNAS",
+    unpaid: "BELUM LUNAS",
+    page: "Halaman",
+    of: "dari",
+    preview: "PRATINJAU",
+    locale: "id-ID",
+  },
+  en: {
+    invoice: "INVOICE",
+    billTo: "Bill To",
+    date: "Date",
+    due: "Due Date",
+    desc: "Description",
+    qty: "Qty",
+    price: "Price",
+    amount: "Amount",
+    subtotal: "Subtotal",
+    discount: "Discount",
+    total: "TOTAL",
+    notes: "Notes",
+    payment: "Payment",
+    scan: "Scan to pay",
+    verify: "Verification Code",
+    sealed: "Authenticity sealed",
+    defaultTagline: "Music Production Studio",
+    paid: "PAID",
+    unpaid: "UNPAID",
+    page: "Page",
+    of: "of",
+    preview: "PREVIEW",
+    locale: "en-US",
+  },
+} as const;
+
+export function invoiceLang(value?: string | null): Lang {
+  return value === "en" ? "en" : "id";
+}

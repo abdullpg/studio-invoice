@@ -19,12 +19,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   invoiceSchema,
   type InvoiceFormInput,
   type InvoiceFormValues,
 } from "@/lib/validations";
 import { CURRENCY_OPTIONS } from "@/lib/currency";
 import { InvoicePreview, type PreviewProfile } from "@/components/invoice-preview";
+import { FitToWidth } from "@/components/fit-to-width";
 
 type Props = {
   mode: "create" | "edit";
@@ -46,7 +55,7 @@ export function InvoiceForm({ mode, number, invoiceId, profile, defaultValues }:
     control,
     handleSubmit,
     watch,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<InvoiceFormInput, unknown, InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
     defaultValues,
@@ -54,6 +63,29 @@ export function InvoiceForm({ mode, number, invoiceId, profile, defaultValues }:
 
   const { fields, append, remove } = useFieldArray({ control, name: "items" });
   const values = watch();
+
+  const savedRef = React.useRef(false);
+  const [leaveOpen, setLeaveOpen] = React.useState(false);
+
+  // Peringatkan saat menutup/refresh tab dengan perubahan belum disimpan.
+  React.useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirty && !savedRef.current) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
+
+  function handleCancel() {
+    if (isDirty && !savedRef.current) {
+      setLeaveOpen(true);
+    } else {
+      router.back();
+    }
+  }
 
   async function onSubmit(data: InvoiceFormValues) {
     const payload = {
@@ -77,6 +109,7 @@ export function InvoiceForm({ mode, number, invoiceId, profile, defaultValues }:
       return;
     }
     const saved = await res.json();
+    savedRef.current = true;
     toast.success(mode === "create" ? "Invoice dibuat." : "Invoice diperbarui.");
     router.push(`/invoices/${saved.id}`);
     router.refresh();
@@ -90,7 +123,7 @@ export function InvoiceForm({ mode, number, invoiceId, profile, defaultValues }:
       className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
     >
       {/* Kolom form */}
-      <div className="space-y-6">
+      <div className="min-w-0 space-y-6">
         {/* Klien & tanggal */}
         <section className="rounded-xl border bg-card p-5">
           <h2 className="mb-4 text-sm font-semibold">Detail Invoice</h2>
@@ -137,45 +170,45 @@ export function InvoiceForm({ mode, number, invoiceId, profile, defaultValues }:
           </div>
           <div className="space-y-3">
             {fields.map((field, i) => (
-              <div
-                key={field.id}
-                className="grid grid-cols-[1fr_auto] gap-2 rounded-lg border p-3 sm:grid-cols-[1fr_70px_120px_auto] sm:items-start"
-              >
-                <div className="col-span-2 sm:col-span-1">
+              <div key={field.id} className="space-y-2 rounded-lg border p-3">
+                <div>
                   <Input
                     placeholder="Deskripsi pekerjaan"
                     {...register(`items.${i}.desc`)}
                   />
                   <FieldError message={errors.items?.[i]?.desc?.message} />
                 </div>
-                <div>
+                <div className="flex items-start gap-2">
                   <Input
                     type="number"
                     step="any"
                     min={0}
+                    aria-label="Qty"
                     placeholder="Qty"
+                    className="w-20 shrink-0"
                     {...register(`items.${i}.qty`, { valueAsNumber: true })}
                   />
-                </div>
-                <div>
                   <Input
                     type="number"
                     step="any"
                     min={0}
-                    placeholder="Harga"
+                    aria-label="Harga satuan"
+                    placeholder="Harga satuan"
+                    className="min-w-0 flex-1"
                     {...register(`items.${i}.price`, { valueAsNumber: true })}
                   />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0"
+                    aria-label="Hapus item"
+                    disabled={fields.length === 1}
+                    onClick={() => remove(i)}
+                  >
+                    <Trash2 className="size-4 text-muted-foreground" />
+                  </Button>
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Hapus item"
-                  disabled={fields.length === 1}
-                  onClick={() => remove(i)}
-                >
-                  <Trash2 className="size-4 text-muted-foreground" />
-                </Button>
               </div>
             ))}
           </div>
@@ -290,19 +323,19 @@ export function InvoiceForm({ mode, number, invoiceId, profile, defaultValues }:
             {isSubmitting && <Loader2 className="size-4 animate-spin" />}
             {mode === "create" ? "Simpan Invoice" : "Simpan Perubahan"}
           </Button>
-          <Button type="button" variant="outline" onClick={() => router.back()}>
+          <Button type="button" variant="outline" onClick={handleCancel}>
             Batal
           </Button>
         </div>
       </div>
 
       {/* Live preview */}
-      <div className="lg:sticky lg:top-8 lg:self-start">
+      <div className="min-w-0 lg:sticky lg:top-8 lg:self-start">
         <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Pratinjau
         </p>
-        <div className="overflow-hidden rounded-xl border bg-muted/30 p-3 shadow-sm">
-          <div className="origin-top scale-[0.92]">
+        <div className="rounded-xl border bg-muted/30 p-3 shadow-sm">
+          <FitToWidth baseWidth={760}>
             <InvoicePreview
               profile={profile}
               invoice={{
@@ -324,9 +357,37 @@ export function InvoiceForm({ mode, number, invoiceId, profile, defaultValues }:
                 })),
               }}
             />
-          </div>
+          </FitToWidth>
         </div>
       </div>
+
+      {/* Konfirmasi keluar tanpa menyimpan */}
+      <Dialog open={leaveOpen} onOpenChange={setLeaveOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Perubahan belum disimpan</DialogTitle>
+            <DialogDescription>
+              Kamu punya perubahan yang belum disimpan. Yakin ingin keluar dan
+              membuangnya?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLeaveOpen(false)}>
+              Lanjut Mengisi
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setLeaveOpen(false);
+                savedRef.current = true;
+                router.back();
+              }}
+            >
+              Keluar Tanpa Simpan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }

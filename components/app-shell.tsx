@@ -10,14 +10,24 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV = [
-  { href: "/invoices", label: "Invoice", icon: FileText, exact: false },
-  { href: "/invoices/new", label: "Buat Baru", icon: PlusCircle, exact: true },
-  { href: "/settings", label: "Pengaturan", icon: Settings, exact: true },
+  { href: "/invoices", label: "Invoice", icon: FileText },
+  { href: "/invoices/new", label: "Buat Baru", icon: PlusCircle },
+  { href: "/settings", label: "Pengaturan", icon: Settings },
 ];
 
-function isActive(pathname: string, href: string, exact: boolean) {
-  if (exact) return pathname === href;
-  return pathname === href || pathname.startsWith(href + "/");
+/**
+ * Tentukan SATU item aktif via longest-match: item yang href-nya paling panjang
+ * dan cocok dengan pathname menang. Ini mencegah "/invoices" ikut aktif saat
+ * berada di "/invoices/new".
+ */
+function getActiveHref(pathname: string): string {
+  const matches = NAV.filter(
+    (item) => pathname === item.href || pathname.startsWith(item.href + "/"),
+  );
+  if (matches.length === 0) return "";
+  return matches.reduce((best, item) =>
+    item.href.length > best.href.length ? item : best,
+  ).href;
 }
 
 export function AppShell({
@@ -28,6 +38,7 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const activeHref = getActiveHref(pathname);
 
   return (
     <div className="min-h-dvh">
@@ -41,7 +52,7 @@ export function AppShell({
         </div>
         <nav className="flex-1 space-y-1 px-3 py-2">
           {NAV.map((item) => {
-            const active = isActive(pathname, item.href, item.exact);
+            const active = activeHref === item.href;
             return (
               <Link
                 key={item.href}
@@ -99,14 +110,14 @@ export function AppShell({
       </header>
 
       {/* Konten utama */}
-      <main className="px-4 pb-24 pt-6 md:ml-60 md:px-10 md:pb-10 md:pt-8">
-        <div className="mx-auto w-full max-w-5xl">{children}</div>
+      <main className="overflow-x-clip px-4 pb-24 pt-6 md:ml-60 md:px-10 md:pb-10 md:pt-8">
+        <div className="mx-auto w-full min-w-0 max-w-5xl">{children}</div>
       </main>
 
       {/* Bottom nav — mobile */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t bg-background/95 backdrop-blur md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
         {NAV.map((item) => {
-          const active = isActive(pathname, item.href, item.exact);
+          const active = activeHref === item.href;
           return (
             <Link
               key={item.href}
