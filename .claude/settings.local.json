@@ -2,7 +2,19 @@
   "permissions": {
     "allow": [
       "PowerShell(node --version)",
-      "PowerShell(npm --version)"
+      "PowerShell(npm --version)",
+      "Bash(npx tsc *)",
+      "Bash(rm -f src/mqtt/mqtt.client.js)",
+      "Bash(node --test)",
+      "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(48\\).toString\\('base64'\\)\\)\")",
+      "Bash(timeout 40 npm run db:seed)",
+      "Bash(npx prisma *)",
+      "Bash(timeout 40 npx prisma db push --accept-data-loss)",
+      "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(32\\).toString\\('base64'\\)\\)\")",
+      "Bash(timeout 45 npm run db:push)",
+      "Bash(timeout 45 npx prisma db push --accept-data-loss)",
+      "Bash(npm install *)",
+      "Bash(timeout 300 npm run build)"
     ]
   }
 }
